@@ -1,0 +1,134 @@
+var config = {
+	backstageURL: "http://www.caac.gov.cn/caacgov", //后台API地址
+	searchPageURL: "http://www.caac.gov.cn/was5/web/search", //检索前台页面地址
+	searchPageURL_Suggest: "http://www.caac.gov.cn/was5/web", //检索前台页面地址
+	flightPageURL: "http://www.caac.gov.cn/INDEX/HLFW/GNHBCX/index.html"
+}
+
+//创建热词日志
+function createlog(searchword, channelid) {
+	try {
+		var data = new Object();
+		data.channelid = channelid;
+		data.searchword = searchword;
+		var now = new Date();
+		var url = config.backstageURL + "/jsonp/searchmessagelog/createlog?channelid=" + channelid + "&searchword=" + searchword + "&temp=" + now.getTime();
+		$.support.cors = true;
+		$.ajax({
+			type: "GET",
+			url: url,
+			async: false,
+			scriptCharset: "UTF-8",
+			dataType: "jsonp",
+			jsonp: "callbackparam", //服务端用于接收callback调用的function名的参数  
+			jsonpCallback: "success_jsonpCallback", //callback的function名称,服务端会把名称和data一起传递回来  
+			success: function(json) {
+				switch (channelid) {
+					case "224375": //全文检索
+						break;
+					default:
+						return
+				}
+			},
+			error: function() {
+				//alert('Error');
+			}
+		});
+	} catch (e) {
+		console.log("搜索服务器出现异常，请联系管理员");
+	}
+
+}
+
+//获取热词推荐
+function gethotkeyword() {
+	var now = new Date();
+	var url = config.backstageURL + "/jsonp/searchmessagelog/gethotkeyword?tmp=" + now.getTime();
+	$.support.cors = true;
+	$.ajax({
+		type: "GET",
+		url: url,
+		dataType: "jsonp",
+		jsonp: "callbackparam", //服务端用于接收callback调用的function名的参数  
+		jsonpCallback: "success_jsonpCallback", //callback的function名称,服务端会把名称和data一起传递回来  
+		success: function(json) {
+			hotkeywordback(json);
+		},
+		error: function() {
+			//alert('Error');
+		}
+	});
+}
+
+function hotkeywordback(json) {
+	if (json != null && json.returnCode == "F20000") {
+		var str = "",
+			obj = json.returnData,
+			len = obj.length;
+		for (var i = 0; i < len; i++) {
+			str += obj[i].searchCode + "  ";
+		}
+		$(".t_input_txt").val(str);
+		$(".t_input_txt").focus(function(){
+		if($(".t_input_txt").val()==str)
+		   $(".t_input_txt").val("")
+		});
+		$(".t_input_txt").blur(function(){
+		if($(".t_input_txt").val().trim()=="")
+		   $(".t_input_txt").val(str)
+		});
+	}
+}
+
+//获取热点栏目
+function getHotColumn(){
+	var url = config.backstageURL + "/jsonp/hotrecommend/getcol"
+	$.ajax({
+		type: "GET",
+		url: url,
+		dataType: "jsonp",
+		jsonp: "callbackparam", //服务端用于接收callback调用的function名的参数  
+		jsonpCallback: "success_getHotColumn", //callback的function名称,服务端会把名称和data一起传递回来  
+		success: function(json) {
+			if(json!=null && json.returnCode === "F20000"){
+				var obj = json.returnData.article,len = obj.length,str = "";
+				if(len>9)len=9;
+				for(var i =0; i<len ; i++){
+					str += "<li><a href='"+obj[i].url+"' target='_blank'>"+obj[i].title+"</a></li>";
+				}	
+				$(".h_panel ul").html(str);
+			}
+		},
+		error: function() {
+			//alert('Error');
+		}
+	});
+}
+//获取热点信息
+function getHotDoc(){
+		var total = 8;
+		var url=config.backstageURL + "/jsonp/hotrecommend/getdoc"
+		$.ajax({
+			type: "GET",
+			url: url,
+			dataType: "jsonp",
+			jsonp: "callbackparam", //服务端用于接收callback调用的function名的参数  
+			jsonpCallback: "success_getHotDoc", //callback的function名称,服务端会把名称和data一起传递回来  
+			success: function(json) {
+				if(json!=null && json.returnCode === "F20000"){
+					var obj = json.returnData.article,len = obj.length,str = "";
+					var loopNum = len<total?len:total;
+					for(var i =0; i<loopNum ; i++){
+					    var title = obj[i].title.length > 18 ?obj[i].title.substr(0,18) + "..." : obj[i].title;
+						str += "<li class='li_noLine'>"
+								+"<span class='f_r n_date'>"+obj[i].pubtime.substring(5)+"</span>"
+							+"<a title='"+obj[i].title+"' href='"+obj[i].url+"' target='_blank'>"+title+"</a></li>";
+					}	
+					$("#hotDoc").html(str);
+				}
+			},
+			error: function() {
+				//alert('Error');
+			}
+		});
+	}
